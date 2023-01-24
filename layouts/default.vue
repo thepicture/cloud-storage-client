@@ -1,5 +1,7 @@
 <template>
   <v-app dark>
+    <Notification ref="notification" />
+
     <v-navigation-drawer
       v-model="drawer"
       :mini-variant="miniVariant"
@@ -86,12 +88,20 @@ export default {
           title: 'Auth',
           to: '/auth',
         },
+        {
+          icon: 'mdi-chart-bubble',
+          title: 'Registration',
+          to: '/registration',
+        },
       ],
       miniVariant: false,
       right: true,
       rightDrawer: false,
       title: 'Cloud Storage Client',
     }
+  },
+  mounted() {
+    this.$root.notification = this.$refs.notification
   },
 }
 </script>
