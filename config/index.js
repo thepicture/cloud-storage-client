@@ -258,3 +258,7 @@ export const REGISTRATION_PASSWORD_RULES = [
   ...PASSWORD_RULES,
   (v) => (!!v && v.length >= 8) || 'Password must be at least 8 digits long',
 ]
+
+export const CONSTANTS = {
+  IS_DARK_THEME: 'isDarkTheme',
+}
