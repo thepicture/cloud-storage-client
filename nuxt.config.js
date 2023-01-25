@@ -26,7 +26,7 @@ export default {
 
   buildModules: ['@nuxtjs/vuetify'],
 
-  modules: [],
+  modules: ['cookie-universal-nuxt'],
 
   vuetify: {
     customVariables: ['~/assets/variables.scss'],
