@@ -92,6 +92,11 @@ export default {
           title: 'Registration',
           to: '/registration',
         },
+        {
+          icon: 'mdi-folder',
+          title: 'Folders',
+          to: '/folders',
+        },
       ],
       miniVariant: false,
       right: true,

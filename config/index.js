@@ -261,4 +261,5 @@ export const REGISTRATION_PASSWORD_RULES = [
 
 export const CONSTANTS = {
   IS_DARK_THEME: 'isDarkTheme',
+  FOLDERS_VIEW_TYPE: 'foldersViewType',
 }
