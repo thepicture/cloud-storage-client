@@ -59,7 +59,7 @@ import {
 } from '@/config/index'
 
 export default {
-  name: 'AuthPage',
+  name: 'RegistrationPage',
   data: () => ({
     email: '',
     emailRules: EMAIL_RULES,
