@@ -263,3 +263,193 @@ export const CONSTANTS = {
   IS_DARK_THEME: 'isDarkTheme',
   FOLDERS_VIEW_TYPE: 'foldersViewType',
 }
+
+export const MOCK_FOLDERS = new Array(16)
+  .fill([
+    {
+      name: 'Documents',
+      createdAt: +new Date() - 12 * 60 * 60 * 1000,
+      owner: 'You',
+      files: [
+        {
+          name: 'homework',
+          extension: 'txt',
+          createdAt: +new Date() - 12 * 60 * 60 * 1001,
+          deletedAt: Infinity,
+          bytes: [0, 255, 255, 254, 250],
+        },
+        {
+          name: '.file',
+          extension: '',
+          createdAt: +new Date() - 12 * 60 * 60 * 1002,
+          deletedAt: Infinity,
+          bytes: [0, 255, 255, 254, 250],
+        },
+        {
+          name: 'music',
+          extension: 'wav',
+          createdAt: +new Date() - 12 * 60 * 60 * 1003,
+          deletedAt: Infinity,
+          bytes: [0, 255, 255, 254, 250],
+        },
+        {
+          name: 'picture',
+          extension: 'webp',
+          createdAt: +new Date() - 12 * 60 * 60 * 1003,
+          deletedAt: Infinity,
+          bytes: [0, 100, 0, 254, 250],
+        },
+        {
+          name: 'files',
+          ext: 'jpeg',
+          createdAt: +new Date() - 12 * 60 * 60 * 1004,
+          deletedAt: Infinity,
+          bytes: [0, 255, 100],
+        },
+      ],
+    },
+    {
+      name: 'Pictures',
+      createdAt: +new Date() - 6 * 60 * 60 * 1000,
+      owner: 'You',
+      files: [
+        {
+          name: 'music',
+          extension: 'wav',
+          createdAt: +new Date() - 12 * 60 * 60 * 103,
+          deletedAt: Infinity,
+          bytes: [0, 255, 255, 254, 250],
+        },
+        {
+          name: 'picture',
+          extension: 'webp',
+          createdAt: +new Date() - 12 * 60 * 60 * 102,
+          deletedAt: Infinity,
+          bytes: [0, 100, 0, 254, 250],
+        },
+        {
+          name: 'files',
+          ext: 'jpeg',
+          createdAt: +new Date() - 12 * 60 * 60 * 101,
+          deletedAt: Infinity,
+          bytes: [0, 255, 100],
+        },
+      ],
+    },
+    {
+      name: 'Videos',
+      createdAt: +new Date() - 3 * 60 * 60 * 1000,
+      owner: 'You',
+      files: [
+        {
+          name: 'homework',
+          extension: 'txt',
+          createdAt: +new Date() - 3 * 60 * 60 * 1000 * 105,
+          deletedAt: Infinity,
+          bytes: [0, 255, 255, 254, 250],
+        },
+        {
+          name: '.file',
+          extension: '',
+          createdAt: +new Date() - 3 * 60 * 60 * 1000 * 104,
+          deletedAt: Infinity,
+          bytes: [0, 255, 255, 254, 250],
+        },
+        {
+          name: 'music',
+          extension: 'wav',
+          createdAt: +new Date() - 3 * 60 * 60 * 1000 * 103,
+          deletedAt: Infinity,
+          bytes: [0, 255, 255, 254, 250],
+        },
+        {
+          name: 'picture',
+          extension: 'webp',
+          createdAt: +new Date() - 3 * 60 * 60 * 1000 * 102,
+          deletedAt: Infinity,
+          bytes: [0, 100, 0, 254, 250],
+        },
+        {
+          name: 'files',
+          ext: 'jpeg',
+          createdAt: +new Date() - 12 * 60 * 60 * 101,
+          deletedAt: Infinity,
+          bytes: [0, 255, 100],
+        },
+      ],
+    },
+    {
+      name: 'Music',
+      createdAt: +new Date() - 30 * 60 * 1000,
+      owner: 'You',
+      files: [
+        {
+          name: 'music',
+          extension: 'wav',
+          createdAt: +new Date() - 30 * 60 * 1000 * 1003,
+          deletedAt: Infinity,
+          bytes: [0, 255, 255, 254, 250],
+        },
+        {
+          name: 'file',
+          ext: 'mp3',
+          createdAt: +new Date() - 30 * 60 * 1000 * 1005,
+          deletedAt: Infinity,
+          bytes: [0, 255, 100],
+        },
+      ],
+    },
+    {
+      name: 'Videos',
+      createdAt: +new Date() - 3 * 60 * 60 * 1000,
+      owner: 'You',
+      files: [
+        {
+          name: 'homework',
+          extension: 'txt',
+          createdAt: +new Date() - 3 * 60 * 60 * 1000 * 105,
+          deletedAt: Infinity,
+          bytes: [0, 255, 255, 254, 250],
+        },
+        {
+          name: '.file',
+          extension: '',
+          createdAt: +new Date() - 3 * 60 * 60 * 1000 * 104,
+          deletedAt: Infinity,
+          bytes: [0, 255, 255, 254, 250],
+        },
+        {
+          name: 'music',
+          extension: 'wav',
+          createdAt: +new Date() - 3 * 60 * 60 * 1000 * 103,
+          deletedAt: Infinity,
+          bytes: [0, 255, 255, 254, 250],
+        },
+        {
+          name: 'picture',
+          extension: 'webp',
+          createdAt: +new Date() - 3 * 60 * 60 * 1000 * 102,
+          deletedAt: Infinity,
+          bytes: [0, 100, 0, 254, 250],
+        },
+        {
+          name: 'files',
+          ext: 'jpeg',
+          createdAt: +new Date() - 12 * 60 * 60 * 101,
+          deletedAt: Infinity,
+          bytes: [0, 255, 100],
+        },
+      ],
+    },
+    {
+      name: 'Empty Folder',
+      createdAt: +new Date() - 30 * 60 * 1003,
+      owner: 'You',
+      files: [],
+    },
+  ])
+  .reduce((a1, a2) => [...a1, ...a2], [])
+  .map((folder, index) => ({
+    ...folder,
+    name: `${folder.name}${index % 2 === 0 ? '_' : ' '}${index}`,
+  }))
