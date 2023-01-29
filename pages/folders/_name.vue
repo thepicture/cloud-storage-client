@@ -16,47 +16,53 @@
     </v-card-title>
     <v-dialog v-model="dialog" max-width="500px">
       <template v-slot:activator="{ on, attrs }">
-        <v-btn color="primary" dark class="mb-2" v-bind="attrs" v-on="on">
+        <v-btn color="primary" dark class="mb-2 ml-4" v-bind="attrs" v-on="on">
           Upload File
         </v-btn>
       </template>
       <v-card>
         <v-card-title>
           <span class="text-h5"
-            >{{ isEditMode ? 'Edit Existing' : 'Add a New' }} File</span
+            >{{ isEditMode ? 'Rename' : 'Upload' }} File</span
           >
         </v-card-title>
+        <v-form v-model="valid" ref="form" class="mr-4">
+          <v-card-text v-if="isEditMode">
+            <v-container>
+              <v-row>
+                <v-col cols="12" sm="6" md="4">
+                  <v-text-field
+                    label="File Name"
+                    v-model="newName"
+                    :rules="fileRules"
+                  ></v-text-field>
+                </v-col>
+              </v-row>
+            </v-container>
+          </v-card-text>
+          <v-file-input
+            :rules="fileRules"
+            label="Select File"
+            show-size
+            class="ml-5"
+            v-model="rawFile"
+            @change="handleFileChange"
+            v-else
+          ></v-file-input>
 
-        <v-card-text>
-          <v-container>
-            <v-row>
-              <v-col cols="12" sm="6" md="4">
-                <v-text-field
-                  label="File Name"
-                  :rules="[
-                    (v) => !!v || 'File Name is Required',
-                    (v) =>
-                      files.every((file) => file.name !== v) ||
-                      'This File Already Exists',
-                  ]"
-                ></v-text-field>
-              </v-col>
-            </v-row>
-          </v-container>
-        </v-card-text>
-
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn color="blue darken-1" text @click="close"> Cancel </v-btn>
-          <v-btn
-            color="blue darken-1"
-            text
-            @click="save"
-            :disabled="!canSaveFile"
-          >
-            Save
-          </v-btn>
-        </v-card-actions>
+          <v-card-actions>
+            <v-spacer></v-spacer>
+            <v-btn color="blue darken-1" text @click="close"> Cancel </v-btn>
+            <v-btn
+              color="blue darken-1"
+              text
+              @click="save"
+              :disabled="!canSaveFile"
+            >
+              {{ isEditMode ? 'Save' : 'Upload' }}
+            </v-btn>
+          </v-card-actions>
+        </v-form>
       </v-card>
     </v-dialog>
     <v-select
@@ -122,6 +128,8 @@ import { filesize } from 'filesize'
 
 import { CONSTANTS } from '@/config/index'
 
+import { getFileName } from '@/store/folders'
+
 export default {
   name: 'FilesPage',
   data: () => ({
@@ -136,6 +144,23 @@ export default {
     search: '',
     dialog: false,
     isEditMode: false,
+    valid: false,
+    defaultFile: {
+      name: '',
+      ext: '',
+      createdAt: 0,
+      deletedAt: Infinity,
+      bytes: [],
+    },
+    editedFile: {
+      name: '',
+      ext: '',
+      createdAt: 0,
+      deletedAt: Infinity,
+      bytes: [],
+    },
+    rawFile: null,
+    newName: '',
   }),
   filters: {
     prettifyBytes(value) {
@@ -164,7 +189,28 @@ export default {
         )
     },
     canSaveFile() {
-      return true
+      return this.valid
+    },
+    fileRules() {
+      if (this.isEditMode) {
+        return [
+          (v) => !!v || 'New Name is Required',
+          (v) =>
+            (!!v && this.files.every((file) => getFileName(file) !== v)) ||
+            'File with this name already exists',
+        ]
+      } else {
+        return [
+          (v) => !!v || 'File Should Be Presented',
+          (v) => (!!v && !v.name.endsWith('.php')) || '.php cannot be uploaded',
+          (v) =>
+            (!!v &&
+              this.files.every(
+                (file) => getFileName(file) !== this.rawFile.name
+              )) ||
+            'File with this name already exists',
+        ]
+      }
     },
     totalSizeOfFiles() {
       return filesize(
@@ -189,33 +235,86 @@ export default {
     },
     save() {
       if (this.isEditMode) {
-        this.$store.commit('folders/update', this.editedFolder)
+        this.$store.commit('folders/updateFile', {
+          file: this.editedFile,
+          newName: this.newName,
+          folderName: decodeURIComponent(this.$route.params.name),
+        })
       } else {
-        this.$store.commit('folders/add', this.editedFolder)
+        this.$store.commit('folders/addFile', {
+          file: this.editedFile,
+          folderName: decodeURIComponent(this.$route.params.name),
+        })
       }
 
       this.close()
     },
-    editFile(folder) {
-      this.editedFolder = Object.assign({}, folder)
+    editFile(file) {
+      this.rawFile = file
+      this.editedFile = file
+      this.newName = getFileName(file)
 
       this.isEditMode = true
       this.dialog = true
     },
-    deleteFile(folder) {
-      this.$store.commit('folders/delete', folder.name)
+    deleteFile(file) {
+      this.$store.commit('folders/deleteFile', {
+        folderName: this.$route.params.name,
+        file,
+      })
     },
     close() {
-      this.editedFolder = Object.assign({}, this.defaultFolder)
+      this.editedFile = Object.assign({}, this.defaultFile)
 
+      this.valid = false
       this.isEditMode = false
       this.dialog = false
+
+      this.rawFile = null
+
+      this.$refs.form.reset()
+    },
+    /**
+     *
+     * @param {File} file
+     */
+    async handleFileChange(file) {
+      if (!file) {
+        return
+      }
+
+      let name
+      let extension
+
+      const bytes = await this._getBytes(file)
+
+      if (file.name.lastIndexOf('.') !== -1) {
+        name = file.name.split('.').slice(0, -1).join('')
+        extension = file.name.split('.').pop()
+      }
+
+      this.editedFile = {
+        name,
+        extension,
+        createdAt: +new Date(),
+        deletedAt: Infinity,
+        bytes,
+      }
+    },
+
+    /**
+     * @param {File} file
+     */
+    async _getBytes(file) {
+      const buffer = await file.arrayBuffer()
+      const array = new Int8Array(buffer)
+
+      return [...array]
     },
   },
   created() {
     this.showAs = this.$cookies.get(CONSTANTS.FOLDERS_VIEW_TYPE) || 'table'
   },
-  mounted() {},
 }
 </script>
 
