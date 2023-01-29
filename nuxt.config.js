@@ -47,4 +47,17 @@ export default {
   },
 
   build: {},
+  router: {
+    extendRoutes(routes, resolve) {
+      return [
+        ...routes.filter((route) => route.path !== '/'),
+        {
+          name: 'folders',
+          path: '/', // <--- change this
+          component: resolve(__dirname, 'pages/folders/index.vue'),
+          chunkName: 'pages/about/index',
+        },
+      ]
+    },
+  },
 }
