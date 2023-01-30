@@ -5,6 +5,7 @@
       <v-btn outlined color="primary" dark class="ml-4" @click="$router.go(-1)"
         >Back</v-btn
       >
+      <v-card-subtitle>{{ totalSizeOfFiles }} Total</v-card-subtitle>
       <v-spacer></v-spacer>
       <v-text-field
         v-model="search"
@@ -12,6 +13,7 @@
         label="Search"
         single-line
         hide-details
+        class="mb-4"
       ></v-text-field>
     </v-card-title>
     <v-dialog v-model="dialog" max-width="500px">
@@ -73,9 +75,23 @@
       v-model="showAs"
       class="ml-4 mr-4"
     ></v-select>
+    <v-select
+      :items="fileTypes"
+      label="File Type"
+      prepend-icon="mdi-filter"
+      v-model="fileType"
+      class="ml-4 mr-4"
+    ></v-select>
+    <v-select
+      :items="extensionTypes"
+      label="Extension Type"
+      prepend-icon="mdi-filter"
+      v-model="extensionType"
+      class="ml-4 mr-4"
+    ></v-select>
     <v-data-table
       :headers="headers"
-      :items="filteredGridFiles"
+      :items="filteredFiles"
       :items-per-page="15"
       class="elevation-1"
       actions=""
@@ -92,14 +108,17 @@
       </template>
       <template v-slot:item.actions="{ item }">
         <v-icon small class="mr-2" @click="editFile(item)"> mdi-pencil </v-icon>
-        <v-icon small @click="deleteFile(item)"> mdi-delete </v-icon>
+        <v-icon small class="mr-2" @click="deleteFile(item)">
+          mdi-delete
+        </v-icon>
+        <v-icon @click="downloadFile(item)">mdi-download</v-icon>
       </template>
     </v-data-table>
     <section class="section" v-else>
       <v-card
         class="card mb-4 mt-4"
         :key="file.name"
-        v-for="file of filteredGridFiles"
+        v-for="file of filteredFiles"
       >
         <v-icon size="300">mdi-file</v-icon>
         <v-card-title primary-title>
@@ -116,9 +135,10 @@
           <v-spacer />
           <v-btn outlined color="primary" @click="editFile(file)">Edit</v-btn>
           <v-btn outlined color="red" @click="deleteFile(file)">Delete</v-btn>
+          <v-btn color="primary" @click="downloadFile(file)">Download</v-btn>
         </v-card-actions>
       </v-card>
-      <p v-if="filteredGridFiles.length === 0">Nothing to show here!</p>
+      <p v-if="filteredFiles.length === 0">Nothing to show here!</p>
     </section>
   </v-card>
 </template>
@@ -126,7 +146,12 @@
 <script>
 import { filesize } from 'filesize'
 
-import { CONSTANTS } from '@/config/index'
+import {
+  CONSTANTS,
+  EXTENSION_TYPE,
+  FILE_TYPE,
+  FILE_TYPE_MIMES,
+} from '@/config/index'
 
 import { getFileName } from '@/store/folders'
 
@@ -139,8 +164,12 @@ export default {
       { text: 'Total Size', value: 'totalSizeInBytes' },
       { text: 'Actions', value: 'actions', sortable: false },
     ],
-    showAs: 'table',
     viewTypes: ['table', 'grid'],
+    showAs: 'table',
+    extensionTypes: Object.values(EXTENSION_TYPE),
+    extensionType: EXTENSION_TYPE.WITH_AND_WITHOUT_EXTENSIONS,
+    fileTypes: Object.values(FILE_TYPE),
+    fileType: FILE_TYPE.ALL,
     search: '',
     dialog: false,
     isEditMode: false,
@@ -171,22 +200,57 @@ export default {
     },
   },
   computed: {
-    filteredGridFiles() {
+    filteredFiles() {
+      let files = this.files.slice()
+
+      console.log('@@@')
       if (!this.search) {
-        return this.files.map((file) => ({
+        files = files.map((file) => ({
           ...file,
           fileName: `${file.name}${file.extension ? '.' + file.extension : ''}`,
         }))
+      } else {
+        files = this.files
+          .map((file) => ({
+            ...file,
+            fileName: `${file.name}${
+              file.extension ? '.' + file.extension : ''
+            }`,
+          }))
+          .filter((file) =>
+            JSON.stringify(file)
+              .toLowerCase()
+              .includes(this.search.toLowerCase())
+          )
       }
 
-      return this.files
-        .map((file) => ({
-          ...file,
-          fileName: `${file.name}${file.extension ? '.' + file.extension : ''}`,
-        }))
-        .filter((file) =>
-          JSON.stringify(file).toLowerCase().includes(this.search.toLowerCase())
+      if (this.extensionType !== EXTENSION_TYPE.WITH_AND_WITHOUT_EXTENSIONS) {
+        files = files.filter((file) =>
+          this.extensionType === EXTENSION_TYPE.WITH_EXTENSION_ONLY
+            ? file.extension?.length > 0
+            : file.extension?.length === 0
         )
+      }
+
+      if (this.fileType !== FILE_TYPE.ALL) {
+        files = files.filter((file) => {
+          if (!file.extension) {
+            return false
+          }
+
+          const extension = file.extension.toLowerCase()
+
+          if (this.fileType === FILE_TYPE.OTHER) {
+            return !Object.values(FILE_TYPE_MIMES)
+              .reduce((acc, value) => [...acc, ...value])
+              .includes(extension)
+          }
+
+          return FILE_TYPE_MIMES[this.fileType].includes(extension)
+        })
+      }
+
+      return files
     },
     canSaveFile() {
       return this.valid
@@ -301,7 +365,18 @@ export default {
         bytes,
       }
     },
+    downloadFile(file) {
+      const bytes = new Int8Array(file.bytes.length)
+      file.bytes.forEach((byte, index) => (bytes[index] = byte))
 
+      const blob = new Blob([bytes])
+
+      const anchor = document.createElement('a')
+      anchor.href = URL.createObjectURL(blob)
+      anchor.download = getFileName(file)
+
+      anchor.click()
+    },
     /**
      * @param {File} file
      */
