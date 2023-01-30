@@ -10,11 +10,12 @@
         label="Search"
         single-line
         hide-details
+        class="mb-4"
       ></v-text-field>
     </v-card-title>
     <v-dialog v-model="dialog" max-width="500px">
       <template v-slot:activator="{ on, attrs }">
-        <v-btn color="primary" dark class="mb-2" v-bind="attrs" v-on="on">
+        <v-btn color="primary" dark class="ml-4 mb-2" v-bind="attrs" v-on="on">
           New Folder
         </v-btn>
       </template>
