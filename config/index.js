@@ -453,3 +453,24 @@ export const MOCK_FOLDERS = new Array(16)
     ...folder,
     name: `${folder.name}${index % 2 === 0 ? '_' : ' '}${index}`,
   }))
+
+export const EXTENSION_TYPE = {
+  WITH_AND_WITHOUT_EXTENSIONS: 'With and Without Extensions',
+  WITH_EXTENSION_ONLY: 'Only With Extensions',
+  WITH_NAME_ONLY: 'Only Without Extensions',
+}
+
+export const FILE_TYPE = {
+  ALL: 'All Types',
+  IMAGES: 'Images',
+  VIDEOS: 'Videos',
+  DOCUMENTS: 'Documents',
+  OTHER: 'Other',
+}
+
+export const FILE_TYPE_MIMES = {
+  [FILE_TYPE.IMAGES]: ['jpeg', 'jpg', 'bmp', 'png', 'gif', 'webp'],
+  [FILE_TYPE.VIDEOS]: ['webm', 'mp4', 'avi'],
+  [FILE_TYPE.DOCUMENTS]: ['docx', 'doc', 'txt', 'pptx', 'ptx'],
+  [FILE_TYPE.OTHER]: 'Other',
+}
