@@ -5,6 +5,7 @@
       <v-btn outlined color="primary" dark class="ml-4" @click="$router.go(-1)"
         >Back</v-btn
       >
+      <v-card-subtitle>{{ totalSizeOfFiles }} Total</v-card-subtitle>
       <v-spacer></v-spacer>
       <v-text-field
         v-model="search"
