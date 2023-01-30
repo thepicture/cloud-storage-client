@@ -107,7 +107,10 @@
       </template>
       <template v-slot:item.actions="{ item }">
         <v-icon small class="mr-2" @click="editFile(item)"> mdi-pencil </v-icon>
-        <v-icon small @click="deleteFile(item)"> mdi-delete </v-icon>
+        <v-icon small class="mr-2" @click="deleteFile(item)">
+          mdi-delete
+        </v-icon>
+        <v-icon @click="downloadFile(item)">mdi-download</v-icon>
       </template>
     </v-data-table>
     <section class="section" v-else>
@@ -131,6 +134,7 @@
           <v-spacer />
           <v-btn outlined color="primary" @click="editFile(file)">Edit</v-btn>
           <v-btn outlined color="red" @click="deleteFile(file)">Delete</v-btn>
+          <v-btn color="primary" @click="downloadFile(file)">Download</v-btn>
         </v-card-actions>
       </v-card>
       <p v-if="filteredFiles.length === 0">Nothing to show here!</p>
@@ -359,6 +363,18 @@ export default {
         deletedAt: Infinity,
         bytes,
       }
+    },
+    downloadFile(file) {
+      const bytes = new Int8Array(file.bytes.length)
+      file.bytes.forEach((byte, index) => (bytes[index] = byte))
+
+      const blob = new Blob([bytes])
+
+      const anchor = document.createElement('a')
+      anchor.href = URL.createObjectURL(blob)
+      anchor.download = getFileName(file)
+
+      anchor.click()
     },
     /**
      * @param {File} file
