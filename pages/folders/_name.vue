@@ -203,7 +203,6 @@ export default {
     filteredFiles() {
       let files = this.files.slice()
 
-      console.log('@@@')
       if (!this.search) {
         files = files.map((file) => ({
           ...file,
