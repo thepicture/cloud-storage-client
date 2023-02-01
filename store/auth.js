@@ -57,7 +57,7 @@ export const actions = {
   },
   async logout({ commit }) {
     await auth.signOut()
-    
+
     commit('setUser', null)
   },
   clearError({ commit }) {
