@@ -64,11 +64,24 @@ export default {
   methods: {
     ...mapActions(['authenticate', 'logout', 'clearError']),
     async submit() {
-      await this.authenticate({
-        email: this.email,
-        password: this.password,
-      })
-      this.reset()
+      if (
+        await this.authenticate({
+          email: this.email,
+          password: this.password,
+        })
+      ) {
+        this.reset()
+
+        this.$router.replace('/')
+
+        this.$root.notification.show({
+          message: 'Authentication successful!',
+        })
+      } else {
+        this.$root.notification.show({
+          message: 'Please, check your credentials and try again.',
+        })
+      }
     },
     reset() {
       this.$refs.form.reset()

@@ -1,4 +1,8 @@
-import { createUserWithEmailAndPassword, signOut } from 'firebase/auth'
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+} from 'firebase/auth'
 
 import { auth } from '@/persistence/firebase'
 
@@ -24,34 +28,36 @@ export const actions = {
         email,
         password
       )
-      commit('setUser', userCredential.user)
+      if (userCredential) {
+        commit('setUser', {
+          accessToken: userCredential.user.accessToken,
+        })
+        return true
+      }
     } catch (error) {
       commit('setError', error.code)
+      return false
     }
-  },
-  async logout({ commit }) {
-    await signOut(auth)
-    commit('setUser', null)
-  },
-  clearError({ commit }) {
-    commit('setError', '')
   },
   async register({ commit }, { email, password }) {
     try {
-      const userCredential = await createUserWithEmailAndPassword(
+      const { user } = await createUserWithEmailAndPassword(
         auth,
         email,
         password
       )
-      commit('setUser', userCredential.user)
-      return userCredential.user
+      commit('setUser', {
+        accessToken: user.accessToken,
+      })
+      return true
     } catch (error) {
       commit('setError', error.code)
-      return error
+      return false
     }
   },
   async logout({ commit }) {
-    await signOut(auth)
+    await auth.signOut()
+    
     commit('setUser', null)
   },
   clearError({ commit }) {
