@@ -83,14 +83,14 @@ export default {
     async submit(event) {
       event.preventDefault()
 
-      const userOrError = await this.register({
-        email: this.email,
-        password: this.password,
-      })
-
-      if (!('message' in userOrError)) {
+      if (
+        await this.register({
+          email: this.email,
+          password: this.password,
+        })
+      ) {
         this.$root.notification.show({
-          message: 'Account registered successfully!',
+          message: 'Account registration successful!',
         })
 
         this.$router.replace('/')

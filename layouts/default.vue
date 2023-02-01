@@ -11,7 +11,7 @@
     >
       <v-list>
         <v-list-item
-          v-for="(item, i) in items"
+          v-for="(item, i) in authDependentItems"
           :key="i"
           :to="item.to"
           router
@@ -38,6 +38,9 @@
       </v-tooltip>
       <v-toolbar-title>{{ title }}</v-toolbar-title>
       <v-spacer />
+      <v-btn color="primary" @click="handleLogOut" v-if="isAuthenticated"
+        >Log out</v-btn
+      >
     </v-app-bar>
     <v-main>
       <v-container>
@@ -51,6 +54,8 @@
 </template>
 
 <script>
+import { mapActions } from 'vuex'
+
 import { CONSTANTS } from '@/config/index'
 
 export default {
@@ -80,13 +85,41 @@ export default {
       miniVariant: false,
       title: 'Cloud Storage Client',
       isDarkTheme: true,
+      loggedOutPaths: ['/auth', '/registration'],
     }
   },
+  computed: {
+    isAuthenticated() {
+      return !!this.$store.state.user
+    },
+    authDependentItems() {
+      if (this.isAuthenticated) {
+        return this.items.filter(
+          (item) => !['/registration', '/auth'].includes(item.to)
+        )
+      } else {
+        return this.items.filter((item) =>
+          ['/registration', '/auth'].includes(item.to)
+        )
+      }
+    },
+  },
   methods: {
+    ...mapActions(['logout']),
     changeTheme() {
       this.$vuetify.theme.dark = !this.$vuetify.theme.dark
 
       this.$cookies.set(CONSTANTS.IS_DARK_THEME, this.$vuetify.theme.dark)
+    },
+    handleLogOut() {
+      this.logout()
+
+      this.$root.notification.show({
+        message: 'Log out successful!',
+      })
+    },
+    navigateTo(path) {
+      this.$router.replace(path)
     },
   },
   created() {
@@ -94,6 +127,20 @@ export default {
   },
   mounted() {
     this.$root.notification = this.$refs.notification
+  },
+  updated() {
+    if (
+      this.isAuthenticated &&
+      this.loggedOutPaths.includes(location.pathname)
+    ) {
+      this.navigateTo('/folders')
+    }
+    if (
+      !this.isAuthenticated &&
+      !this.loggedOutPaths.includes(window.location.pathname)
+    ) {
+      this.navigateTo('/auth')
+    }
   },
 }
 </script>
