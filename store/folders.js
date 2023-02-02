@@ -1,7 +1,9 @@
 import { MOCK_FOLDERS } from '@/config'
 
+import { FolderDatabase } from '@/persistence/database/FolderDatabase'
+
 export const state = () => ({
-  list: MOCK_FOLDERS,
+  list: [],
 })
 
 export const getName = (name) => {
