@@ -1,7 +1,6 @@
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  signOut,
 } from 'firebase/auth'
 
 import { auth } from '@/persistence/firebase'
@@ -31,6 +30,7 @@ export const actions = {
       if (userCredential) {
         commit('setUser', {
           accessToken: userCredential.user.accessToken,
+          email: userCredential.user.email,
         })
         return true
       }
@@ -48,6 +48,7 @@ export const actions = {
       )
       commit('setUser', {
         accessToken: user.accessToken,
+        email: userCredential.user.email,
       })
       return true
     } catch (error) {

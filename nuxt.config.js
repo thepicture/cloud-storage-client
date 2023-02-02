@@ -26,7 +26,7 @@ export default {
 
   buildModules: ['@nuxtjs/vuetify'],
 
-  modules: ['cookie-universal-nuxt'],
+  modules: ['cookie-universal-nuxt', '@nuxt/http'],
 
   vuetify: {
     customVariables: ['~/assets/variables.scss'],
@@ -47,4 +47,11 @@ export default {
   },
 
   build: {},
+
+  serverMiddleware: [
+    {
+      path: '/api',
+      handler: '~/api/index.js',
+    },
+  ],
 }
