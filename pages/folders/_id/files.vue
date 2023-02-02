@@ -108,7 +108,7 @@
       </template>
       <template v-slot:item.actions="{ item }">
         <v-icon small class="mr-2" @click="editFile(item)"> mdi-pencil </v-icon>
-        <v-icon small class="mr-2" @click="deleteFile(item)">
+        <v-icon small class="mr-2" @click="deleteFile(item.id)">
           mdi-delete
         </v-icon>
         <v-icon @click="downloadFile(item)">mdi-download</v-icon>
@@ -134,7 +134,9 @@
         <v-card-actions>
           <v-spacer />
           <v-btn outlined color="primary" @click="editFile(file)">Edit</v-btn>
-          <v-btn outlined color="red" @click="deleteFile(file)">Delete</v-btn>
+          <v-btn outlined color="red" @click="deleteFile(file.id)"
+            >Delete</v-btn
+          >
           <v-btn color="primary" @click="downloadFile(file)">Download</v-btn>
         </v-card-actions>
       </v-card>
@@ -153,7 +155,11 @@ import {
   FILE_TYPE_MIMES,
 } from '@/config/index'
 
-import { getFileName } from '@/store/folders'
+import { FilenameGetter } from '@/utils/FilenameGetter'
+
+import { FileURI } from '@/utils/FileURI'
+
+import { Timestamp } from '@/utils/Timestamp'
 
 export default {
   name: 'FilesPage',
@@ -184,15 +190,17 @@ export default {
     isEditMode: false,
     valid: false,
     defaultFile: {
+      id: 0,
       name: '',
-      ext: '',
+      extension: '',
       createdAt: 0,
       deletedAt: Infinity,
       bytes: [],
     },
     editedFile: {
+      id: 0,
       name: '',
-      ext: '',
+      extension: '',
       createdAt: 0,
       deletedAt: Infinity,
       bytes: [],
@@ -267,8 +275,12 @@ export default {
       if (this.isEditMode) {
         return [
           (v) => !!v || 'New Name is Required',
+          (v) => (!!v && !v.endsWith('.php')) || '.php cannot be uploaded',
           (v) =>
-            (!!v && this.files.every((file) => getFileName(file) !== v)) ||
+            (!!v &&
+              this.files.every(
+                (file) => FilenameGetter.getFileName(file) !== v
+              )) ||
             'File with this name already exists',
         ]
       } else {
@@ -278,7 +290,7 @@ export default {
           (v) =>
             (!!v &&
               this.files.every(
-                (file) => getFileName(file) !== this.rawFile.name
+                (file) => FilenameGetter.getFileName(file) !== this.rawFile.name
               )) ||
             'File with this name already exists',
         ]
@@ -300,17 +312,57 @@ export default {
     handleViewTypeSelect() {
       this.$cookies.set(CONSTANTS.FOLDERS_VIEW_TYPE, this.showAs)
     },
-    save() {
+    async save() {
       if (this.isEditMode) {
-        this.$store.commit('folders/updateFile', {
-          file: this.editedFile,
-          newName: this.newName,
-          folderName: decodeURIComponent(this.$route.params.name),
+        const [title, extension] = new FileURI(this.newName).getValues()
+
+        await this.$http.$patch(`/api/files/${this.editedFile.id}`, {
+          newTitle: title,
+          newExtension: extension,
+        })
+
+        this.files = this.files.map((file) => {
+          if (file.id === this.editedFile.id) {
+            file.name = title
+            file.extension = extension
+          }
+
+          return file
+        })
+
+        this.$root.notification.show({
+          message: 'Rename successful!',
         })
       } else {
-        this.$store.commit('folders/addFile', {
-          file: this.editedFile,
-          folderName: decodeURIComponent(this.$route.params.name),
+        const [title, extension] = [
+          this.editedFile.name,
+          this.editedFile.extension,
+        ]
+
+        const id = await this.$http.$post(`/api/files`, {
+          title,
+          extension,
+          deletedAt: null,
+          bytes: this.editedFile.bytes,
+          folderId: Number(this.$route.params.id),
+        })
+
+        this.files = [
+          ...this.files,
+          {
+            id,
+            name: title,
+            extension: extension,
+            createdAt: Timestamp.nowAsSeconds() * 1000,
+            deletedAt: null,
+            owner: this.$store.state.user.email,
+            folderId: this.editedFile.folderId,
+            bytes: this.editedFile.bytes,
+          },
+        ]
+
+        this.$root.notification.show({
+          message: `File uploaded!`,
         })
       }
 
@@ -319,15 +371,17 @@ export default {
     editFile(file) {
       this.rawFile = file
       this.editedFile = file
-      this.newName = getFileName(file)
+      this.newName = FilenameGetter.getFileName(file)
 
       this.isEditMode = true
       this.dialog = true
     },
-    deleteFile(file) {
-      this.$store.commit('folders/deleteFile', {
-        folderName: this.$route.params.name,
-        file,
+    async deleteFile(fileId) {
+      await this.$http.$delete(`/api/files/${fileId}`)
+      this.files = this.files.filter((file) => file.id !== fileId)
+
+      this.$root.notification.show({
+        message: 'Deletion successful!',
       })
     },
     close() {
@@ -376,7 +430,7 @@ export default {
 
       const anchor = document.createElement('a')
       anchor.href = URL.createObjectURL(blob)
-      anchor.download = getFileName(file)
+      anchor.download = FilenameGetter.getFileName(file)
 
       anchor.click()
     },

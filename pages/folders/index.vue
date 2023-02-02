@@ -91,7 +91,7 @@
         <v-icon small class="mr-2" @click.stop="editFolder(item)">
           mdi-pencil
         </v-icon>
-        <v-icon small @click.stop="deleteFolder(item)"> mdi-delete </v-icon>
+        <v-icon small @click.stop="deleteFolder(item.id)"> mdi-delete </v-icon>
       </template>
     </v-data-table>
     <section class="section" v-else>
@@ -125,7 +125,7 @@
           <v-btn outlined color="primary" @click.stop="editFolder(folder)"
             >Edit</v-btn
           >
-          <v-btn outlined color="red" @click="deleteFolder(folder)"
+          <v-btn outlined color="red" @click="deleteFolder(folder.id)"
             >Delete</v-btn
           >
         </v-card-actions>
@@ -139,6 +139,7 @@
 import { filesize } from 'filesize'
 
 import { CONSTANTS } from '@/config/index'
+import { Timestamp } from '~/utils/Timestamp'
 
 export default {
   name: 'FoldersPage',
@@ -170,12 +171,14 @@ export default {
     viewTypes: ['table', 'grid'],
     search: '',
     defaultFolder: {
+      id: 0,
       name: '',
       createdAt: 0,
       owner: 'You',
       files: [],
     },
     editedFolder: {
+      id: 0,
       name: '',
       createdAt: 0,
       owner: 'You',
@@ -208,7 +211,6 @@ export default {
       )
     },
     totalSizeOfFolders() {
-      return 0
       return filesize(
         this.folders
           .map((folder) =>
@@ -229,11 +231,43 @@ export default {
     handleViewTypeSelect() {
       this.$cookies.set(CONSTANTS.FOLDERS_VIEW_TYPE, this.showAs)
     },
-    save() {
+    async save() {
       if (this.isEditMode) {
-        this.$store.commit('folders/update', this.editedFolder)
+        await this.$http.$patch(`/api/folders/${this.editedFolder.id}`, {
+          newTitle: this.editedFolder.name,
+        })
+
+        this.folders = this.folders.map((folder) => {
+          if (folder.id === this.editedFolder.id) {
+            folder.name = this.editedFolder.name
+          }
+
+          return folder
+        })
+
+        this.$root.notification.show({
+          message: 'Rename successful!',
+        })
       } else {
-        this.$store.commit('folders/add', this.editedFolder)
+        const id = await this.$http.$post(`/api/folders`, {
+          title: this.editedFolder.name,
+          userEmail: this.$store.state.user.email,
+        })
+
+        this.folders = [
+          ...this.folders,
+          {
+            id,
+            name: this.editedFolder.name,
+            createdAt: Timestamp.nowAsSeconds() * 1000,
+            owner: this.$store.state.user.email,
+            files: [],
+          },
+        ]
+
+        this.$root.notification.show({
+          message: `Folder ${this.editedFolder.name} created!`,
+        })
       }
 
       this.close()
@@ -244,8 +278,13 @@ export default {
       this.isEditMode = true
       this.dialog = true
     },
-    deleteFolder(folder) {
-      this.$store.commit('folders/delete', folder.name)
+    async deleteFolder(folderId) {
+      await this.$http.$delete(`/api/folders/${folderId}`)
+      this.folders = this.folders.filter((folder) => folder.id !== folderId)
+
+      this.$root.notification.show({
+        message: 'Deletion successful!',
+      })
     },
     close() {
       this.editedFolder = Object.assign({}, this.defaultFolder)
