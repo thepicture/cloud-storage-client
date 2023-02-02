@@ -23,9 +23,7 @@ class FileDatabase {
             return reject(err)
           } else {
             results.forEach((file) => {
-              file.bytes = file.bytes
-                .match(/.{2}/g)
-                .map((value) => parseInt(value, 16))
+              file.bytes = [...Buffer.from(file.bytes, 'hex')]
             })
             resolve(results)
           }
@@ -34,22 +32,20 @@ class FileDatabase {
     })
   }
 
-  async renameFile({ fileId, newTitle, newExtension = '' }) {
+  renameFileById({ fileId, newTitle, newExtension = '' }) {
     this.db.run(
       `UPDATE FILE
           SET title=?,
               extension=?
-        WHERE id=?
-        LIMIT 1`,
+        WHERE id=?`,
       [newTitle, newExtension, fileId]
     )
   }
 
-  async deleteFile(fileId) {
+  deleteFileById(fileId) {
     this.db.run(
       `DELETE FROM FILE
-        WHERE id=?
-        LIMIT 1`,
+        WHERE id=?`,
       [fileId]
     )
   }
@@ -61,11 +57,27 @@ class FileDatabase {
     bytes,
     folderId,
   }) {
-    this.db.run(
-      `INSERT INTO [FILE](title, extension, createdAt, deletedAt, bytes, folderId)
-            VALUES (?, ?, ?, ?, ?, ?)`,
-      [title, extension, Timestamp.nowAsSeconds(), deletedAt, bytes, folderId]
-    )
+    return await new Promise((resolve, reject) => {
+      this.db.run(
+        `INSERT INTO [FILE](title, extension, createdAt, deletedAt, bytes, folderId)
+              VALUES (?, ?, ?, ?, ?, ?)`,
+        [
+          title,
+          extension,
+          Timestamp.nowAsSeconds(),
+          deletedAt,
+          Buffer.from(bytes),
+          folderId,
+        ],
+        function (err) {
+          if (err) {
+            reject(err)
+          } else {
+            resolve(this.lastID)
+          }
+        }
+      )
+    })
   }
 }
 

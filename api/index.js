@@ -36,7 +36,7 @@ db.serialize(() => {
 const folderDatabase = new FolderDatabase(db)
 const fileDatabase = new FileDatabase(db)
 
-app.use(bodyParser.json())
+app.use(bodyParser.json({ limit: '256mb' }))
 
 app.get('/folders/:userEmail', async (req, res) => {
   try {
@@ -50,7 +50,7 @@ app.get('/folders/:userEmail', async (req, res) => {
   }
 })
 
-app.all('/files', async (req, res) => {
+app.get('/files', async (req, res) => {
   try {
     const folderId = Number(req.query['folder_id'])
     const files = await fileDatabase.getFilesFromFolder(folderId)
@@ -68,6 +68,20 @@ app.delete('/folders/:folderId', async (req, res) => {
     const folderId = Number(req.params.folderId)
 
     folderDatabase.deleteFolderById(folderId)
+
+    res.sendStatus(200)
+  } catch (error) {
+    res.status(500).json({
+      error: [error.toString()],
+    })
+  }
+})
+
+app.delete('/files/:fileId', async (req, res) => {
+  try {
+    const fileId = Number(req.params.fileId)
+
+    fileDatabase.deleteFileById(fileId)
 
     res.sendStatus(200)
   } catch (error) {
@@ -101,6 +115,37 @@ app.patch('/folders/:folderId', async (req, res) => {
   }
 })
 
+app.patch('/files/:fileId', async (req, res) => {
+  try {
+    const fileId = Number(req.params.fileId)
+    const { newTitle, newExtension } = req.body
+
+    if (!newTitle) {
+      res.status(422).json({
+        error: ['title is required'],
+      })
+    }
+
+    if (newExtension && newExtension === 'php') {
+      res.status(422).json({
+        error: ['php extension is prohibited'],
+      })
+    }
+
+    fileDatabase.renameFileById({
+      fileId,
+      newTitle,
+      newExtension,
+    })
+
+    res.sendStatus(204)
+  } catch (error) {
+    res.status(500).json({
+      error: [error.toString()],
+    })
+  }
+})
+
 app.post('/folders', async (req, res) => {
   try {
     const { title, userEmail } = req.body
@@ -122,9 +167,45 @@ app.post('/folders', async (req, res) => {
       userEmail,
     })
 
-    console.log(id)
+    res.status(201).json(id)
+  } catch (error) {
+    res.status(500).json({
+      error: [error.toString()],
+    })
+  }
+})
 
-    res.status(201).json({ id })
+app.post('/files', async (req, res) => {
+  try {
+    const { title, extension, deletedAt, bytes, folderId } = req.body
+
+    if (!title) {
+      res.status(422).json({
+        error: ['title is required'],
+      })
+    }
+
+    if (!bytes || bytes.length === 0) {
+      res.status(422).json({
+        error: ['file content cannot be empty'],
+      })
+    }
+
+    if (folderId <= 0) {
+      res.status(422).json({
+        error: ['folder should exist'],
+      })
+    }
+
+    const id = await fileDatabase.createFile({
+      title,
+      extension,
+      deletedAt,
+      bytes,
+      folderId,
+    })
+
+    res.status(201).json(id)
   } catch (error) {
     res.status(500).json({
       error: [error.toString()],
