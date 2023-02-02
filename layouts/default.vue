@@ -117,6 +117,8 @@ export default {
       this.$root.notification.show({
         message: 'Log out successful!',
       })
+
+      this.navigateTo('/auth')
     },
     navigateTo(path) {
       this.$router.replace(path)
@@ -127,19 +129,15 @@ export default {
   },
   mounted() {
     this.$root.notification = this.$refs.notification
-  },
-  updated() {
-    if (
-      this.isAuthenticated &&
-      this.loggedOutPaths.includes(location.pathname)
-    ) {
-      this.navigateTo('/folders')
-    }
-    if (
-      !this.isAuthenticated &&
-      !this.loggedOutPaths.includes(window.location.pathname)
-    ) {
-      this.navigateTo('/auth')
+
+    if (this.isAuthenticated) {
+      if (this.loggedOutPaths.includes(location.pathname)) {
+        this.navigateTo('/folders')
+      }
+    } else {
+      if (!this.loggedOutPaths.includes(location.pathname)) {
+        this.navigateTo('/auth')
+      }
     }
   },
 }
