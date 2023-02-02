@@ -74,7 +74,7 @@
       class="elevation-1 row-pointer"
       actions=""
       :search="search"
-      @click:row="(folder) => openFolder(folder.name)"
+      @click:row="(folder) => openFolder(folder.id)"
       v-if="showAs === 'table'"
     >
       <template v-slot:item.createdAt="{ item }">
@@ -142,6 +142,21 @@ import { CONSTANTS } from '@/config/index'
 
 export default {
   name: 'FoldersPage',
+  async asyncData(context) {
+    const user = context.store.state.user
+
+    if (!user) {
+      return { folders: [] }
+    }
+
+    const data = await context.$http.$get(
+      `/api/folders/${encodeURIComponent(user.email)}`
+    )
+
+    return {
+      folders: data.folders,
+    }
+  },
   data: () => ({
     headers: [
       { text: 'Name', value: 'name' },
@@ -164,7 +179,6 @@ export default {
       name: '',
       createdAt: 0,
       owner: 'You',
-      files: [],
     },
     dialog: false,
     isEditMode: false,
@@ -194,6 +208,7 @@ export default {
       )
     },
     totalSizeOfFolders() {
+      return 0
       return filesize(
         this.folders
           .map((folder) =>
@@ -208,9 +223,6 @@ export default {
           standard: 'jedec',
         }
       )
-    },
-    folders() {
-      return this.$store.state.folders.list
     },
   },
   methods: {
@@ -241,8 +253,8 @@ export default {
       this.isEditMode = false
       this.dialog = false
     },
-    openFolder(folderName) {
-      this.$router.push(`/folders/${encodeURIComponent(folderName)}`)
+    openFolder(folderId) {
+      this.$router.push(`/folders/${encodeURIComponent(folderId)}/files`)
     },
   },
   created() {

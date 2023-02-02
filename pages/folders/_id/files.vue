@@ -157,6 +157,15 @@ import { getFileName } from '@/store/folders'
 
 export default {
   name: 'FilesPage',
+  async asyncData(context) {
+    const data = await context.$http.$get(
+      `/api/files?folder_id=${context.route.params.id}`
+    )
+
+    return {
+      files: data.files,
+    }
+  },
   data: () => ({
     headers: [
       { text: 'File Name', value: 'name' },
@@ -285,11 +294,6 @@ export default {
           standard: 'jedec',
         }
       )
-    },
-    files() {
-      return this.$store.state.folders.list.find(
-        (folder) => folder.name === decodeURIComponent(this.$route.params.name)
-      ).files
     },
   },
   methods: {
