@@ -48,7 +48,7 @@ export const actions = {
       )
       commit('setUser', {
         accessToken: user.accessToken,
-        email: userCredential.user.email,
+        email: user.email,
       })
       return true
     } catch (error) {
