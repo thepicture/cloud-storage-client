@@ -38,13 +38,15 @@ const fileDatabase = new FileDatabase(db)
 
 app.use(bodyParser.json())
 
-app.all('/folders/:userEmail', async (req, res) => {
+app.get('/folders/:userEmail', async (req, res) => {
   try {
     const folders = await folderDatabase.getAllFolders(req.params.userEmail)
 
     res.json({ folders })
   } catch (error) {
-    res.json({ error })
+    res.status(500).json({
+      error: [error.toString()],
+    })
   }
 })
 
@@ -55,7 +57,78 @@ app.all('/files', async (req, res) => {
 
     res.json({ files })
   } catch (error) {
-    res.json({ error })
+    res.status(500).json({
+      error: [error.toString()],
+    })
+  }
+})
+
+app.delete('/folders/:folderId', async (req, res) => {
+  try {
+    const folderId = Number(req.params.folderId)
+
+    folderDatabase.deleteFolderById(folderId)
+
+    res.sendStatus(200)
+  } catch (error) {
+    res.status(500).json({
+      error: [error.toString()],
+    })
+  }
+})
+
+app.patch('/folders/:folderId', async (req, res) => {
+  try {
+    const folderId = Number(req.params.folderId)
+    const { newTitle } = req.body
+
+    if (!newTitle) {
+      res.status(422).json({
+        error: ['title is required'],
+      })
+    }
+
+    folderDatabase.renameFolderById({
+      folderId,
+      newTitle,
+    })
+
+    res.sendStatus(204)
+  } catch (error) {
+    res.status(500).json({
+      error: [error.toString()],
+    })
+  }
+})
+
+app.post('/folders', async (req, res) => {
+  try {
+    const { title, userEmail } = req.body
+
+    if (!title) {
+      res.status(422).json({
+        error: ['title is required'],
+      })
+    }
+
+    if (!userEmail) {
+      res.status(422).json({
+        error: ['user email is required'],
+      })
+    }
+
+    const id = await folderDatabase.createFolder({
+      title,
+      userEmail,
+    })
+
+    console.log(id)
+
+    res.status(201).json({ id })
+  } catch (error) {
+    res.status(500).json({
+      error: [error.toString()],
+    })
   }
 })
 
