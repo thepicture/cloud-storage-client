@@ -350,7 +350,7 @@ export default {
         this.files = [
           ...this.files,
           {
-            id: data.id,
+            id: id.data,
             name: title,
             extension: extension,
             createdAt: Timestamp.nowAsSeconds() * 1000,
