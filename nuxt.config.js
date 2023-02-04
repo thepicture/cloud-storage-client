@@ -26,7 +26,11 @@ export default {
 
   buildModules: ['@nuxtjs/vuetify'],
 
-  modules: ['cookie-universal-nuxt', '@nuxt/http'],
+  modules: ['cookie-universal-nuxt', '@nuxt/http', '@nuxtjs/axios'],
+
+  axios: {
+    baseURL: 'https://cloud-storage-server.thepicture.repl.co/',
+  },
 
   vuetify: {
     customVariables: ['~/assets/variables.scss'],

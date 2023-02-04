@@ -164,12 +164,12 @@ import { Timestamp } from '@/utils/Timestamp'
 export default {
   name: 'FilesPage',
   async asyncData(context) {
-    const data = await context.$http.$get(
-      `/api/files?folder_id=${context.route.params.id}`
+    const response = await context.$axios.get(
+      `/files?folder_id=${context.route.params.id}`
     )
 
     return {
-      files: data.files,
+      files: response.data.files,
     }
   },
   data: () => ({
@@ -316,7 +316,7 @@ export default {
       if (this.isEditMode) {
         const [title, extension] = new FileURI(this.newName).getValues()
 
-        await this.$http.$patch(`/api/files/${this.editedFile.id}`, {
+        await this.$axios.patch(`/files/${this.editedFile.id}`, {
           newTitle: title,
           newExtension: extension,
         })
@@ -339,7 +339,7 @@ export default {
           this.editedFile.extension,
         ]
 
-        const id = await this.$http.$post(`/api/files`, {
+        const id = await this.$axios.post(`/files`, {
           title,
           extension,
           deletedAt: null,
@@ -350,7 +350,7 @@ export default {
         this.files = [
           ...this.files,
           {
-            id,
+            id: data.id,
             name: title,
             extension: extension,
             createdAt: Timestamp.nowAsSeconds() * 1000,
@@ -377,7 +377,7 @@ export default {
       this.dialog = true
     },
     async deleteFile(fileId) {
-      await this.$http.$delete(`/api/files/${fileId}`)
+      await this.$axios.delete(`/files/${fileId}`)
       this.files = this.files.filter((file) => file.id !== fileId)
 
       this.$root.notification.show({
@@ -393,7 +393,9 @@ export default {
 
       this.rawFile = null
 
-      this.$refs.form.reset()
+      try {
+        this.$refs.form.reset()
+      } catch {}
     },
     /**
      *

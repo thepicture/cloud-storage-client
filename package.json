@@ -1,6 +1,6 @@
 {
   "name": "cloud-storage-client",
-  "version": "1.10.1",
+  "version": "1.10.2",
   "private": true,
   "scripts": {
     "dev": "nuxt",
@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@nuxt/http": "^0.6.4",
+    "@nuxtjs/axios": "^5.13.6",
     "body-parser": "^1.20.1",
     "cookie-universal-nuxt": "^2.2.2",
     "core-js": "^3.25.3",
