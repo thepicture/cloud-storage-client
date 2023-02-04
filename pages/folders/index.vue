@@ -150,12 +150,12 @@ export default {
       return { folders: [] }
     }
 
-    const data = await context.$http.$get(
-      `/api/folders/${encodeURIComponent(user.email)}`
+    const response = await context.$axios.get(
+      `/folders/${encodeURIComponent(user.email)}`
     )
 
     return {
-      folders: data.folders,
+      folders: response.data.folders,
     }
   },
   data: () => ({
@@ -233,7 +233,7 @@ export default {
     },
     async save() {
       if (this.isEditMode) {
-        await this.$http.$patch(`/api/folders/${this.editedFolder.id}`, {
+        await this.$axios.patch(`/folders/${this.editedFolder.id}`, {
           newTitle: this.editedFolder.name,
         })
 
@@ -249,7 +249,7 @@ export default {
           message: 'Rename successful!',
         })
       } else {
-        const id = await this.$http.$post(`/api/folders`, {
+        const id = await this.$axios.post(`/folders`, {
           title: this.editedFolder.name,
           userEmail: this.$store.state.user.email,
         })
@@ -257,7 +257,7 @@ export default {
         this.folders = [
           ...this.folders,
           {
-            id,
+            id: id.data,
             name: this.editedFolder.name,
             createdAt: Timestamp.nowAsSeconds() * 1000,
             owner: this.$store.state.user.email,
@@ -279,7 +279,7 @@ export default {
       this.dialog = true
     },
     async deleteFolder(folderId) {
-      await this.$http.$delete(`/api/folders/${folderId}`)
+      await this.$axios.delete(`/folders/${folderId}`)
       this.folders = this.folders.filter((folder) => folder.id !== folderId)
 
       this.$root.notification.show({
