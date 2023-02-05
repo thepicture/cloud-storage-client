@@ -163,15 +163,6 @@ import { Timestamp } from '@/utils/Timestamp'
 
 export default {
   name: 'FilesPage',
-  async asyncData(context) {
-    const response = await context.$axios.get(
-      `/files?folder_id=${context.route.params.id}`
-    )
-
-    return {
-      files: response.data.files,
-    }
-  },
   data: () => ({
     headers: [
       { text: 'File Name', value: 'name' },
@@ -207,6 +198,7 @@ export default {
     },
     rawFile: null,
     newName: '',
+    files: [],
   }),
   filters: {
     prettifyBytes(value) {
@@ -448,6 +440,13 @@ export default {
   },
   created() {
     this.showAs = this.$cookies.get(CONSTANTS.FOLDERS_VIEW_TYPE) || 'table'
+  },
+  async mounted() {
+    const response = await this.$axios.get(
+      `/files?folder_id=${this.$route.params.id}`
+    )
+
+    this.files = response.data.files
   },
 }
 </script>

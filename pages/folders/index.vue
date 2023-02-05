@@ -143,21 +143,6 @@ import { Timestamp } from '~/utils/Timestamp'
 
 export default {
   name: 'FoldersPage',
-  async asyncData(context) {
-    const user = context.store.state.user
-
-    if (!user) {
-      return { folders: [] }
-    }
-
-    const response = await context.$axios.get(
-      `/folders/${encodeURIComponent(user.email)}`
-    )
-
-    return {
-      folders: response.data.folders,
-    }
-  },
   data: () => ({
     headers: [
       { text: 'Name', value: 'name' },
@@ -185,6 +170,7 @@ export default {
     },
     dialog: false,
     isEditMode: false,
+    folders: [],
   }),
   filters: {
     prettifyBytes(value) {
@@ -298,6 +284,19 @@ export default {
   },
   created() {
     this.showAs = this.$cookies.get(CONSTANTS.FOLDERS_VIEW_TYPE) || 'table'
+  },
+  async mounted() {
+    const user = this.$store.state.user
+
+    if (!user) {
+      return { folders: [] }
+    }
+
+    const response = await this.$axios.get(
+      `/folders/${encodeURIComponent(user.email)}`
+    )
+
+    this.folders = response.data.folders
   },
 }
 </script>
