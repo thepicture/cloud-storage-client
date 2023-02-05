@@ -81,11 +81,7 @@
         {{ new Date(item.createdAt).toLocaleString() }}
       </template>
       <template v-slot:item.totalSizeInBytes="{ item }">
-        {{
-          item.files
-            .map((file) => file.bytes.length)
-            .reduce((b1, b2) => b1 + b2, 0) | prettifyBytes
-        }}
+        {{ item.totalSizeInBytes | prettifyBytes }}
       </template>
       <template v-slot:item.actions="{ item }">
         <v-icon small class="mr-2" @click.stop="editFolder(item)">
@@ -99,7 +95,7 @@
         class="card mb-4 mt-4"
         :key="folder.name"
         v-for="folder of filteredGridFolders"
-        @click="() => openFolder(folder.name)"
+        @click="() => openFolder(folder.id)"
       >
         <v-icon size="300">mdi-folder</v-icon>
         <v-card-title primary-title>
@@ -110,22 +106,18 @@
           {{ new Date(folder.createdAt).toLocaleDateString() }}
         </v-card-subtitle>
         <v-card-text>
-          {{ folder.files.length }}
-          {{ `file${folder.files.length === 1 ? '' : 's'}` }}
+          {{ folder.filesCount }}
+          {{ `file${folder.filesCount === 1 ? '' : 's'}` }}
         </v-card-text>
         <v-card-text>
-          {{
-            folder.files
-              .map((file) => file.bytes.length)
-              .reduce((b1, b2) => b1 + b2, 0) | prettifyBytes
-          }}
+          {{ folder.totalSizeInBytes | prettifyBytes }}
         </v-card-text>
         <v-card-actions>
           <v-spacer />
           <v-btn outlined color="primary" @click.stop="editFolder(folder)"
             >Edit</v-btn
           >
-          <v-btn outlined color="red" @click="deleteFolder(folder.id)"
+          <v-btn outlined color="red" @click.stop="deleteFolder(folder.id)"
             >Delete</v-btn
           >
         </v-card-actions>
@@ -148,7 +140,7 @@ export default {
       { text: 'Name', value: 'name' },
       { text: 'Created At', value: 'createdAt' },
       { text: 'Owner', value: 'owner' },
-      { text: 'Files Count', value: 'files.length' },
+      { text: 'Files Count', value: 'filesCount' },
       { text: 'Total Size', value: 'totalSizeInBytes' },
       { text: 'Actions', value: 'actions', sortable: false },
     ],
@@ -160,13 +152,16 @@ export default {
       name: '',
       createdAt: 0,
       owner: 'You',
-      files: [],
+      filesCount: 0,
+      totalSizeInBytes: 0,
     },
     editedFolder: {
       id: 0,
       name: '',
       createdAt: 0,
       owner: 'You',
+      filesCount: 0,
+      totalSizeInBytes: 0,
     },
     dialog: false,
     isEditMode: false,
@@ -199,12 +194,7 @@ export default {
     totalSizeOfFolders() {
       return filesize(
         this.folders
-          .map((folder) =>
-            folder.files
-              .map((file) => file.bytes.length)
-              .reduce((b1, b2) => b1 + b2, 0)
-          )
-          .flat()
+          .map((folder) => folder.totalSizeInBytes)
           .reduce((f1, f2) => f1 + f2, 0),
         {
           base: 2,
@@ -247,7 +237,8 @@ export default {
             name: this.editedFolder.name,
             createdAt: Timestamp.nowAsSeconds() * 1000,
             owner: this.$store.state.user.email,
-            files: [],
+            filesCount: 0,
+            totalSizeInBytes: 0,
           },
         ]
 
