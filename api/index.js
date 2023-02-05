@@ -63,6 +63,20 @@ app.get('/files', async (req, res) => {
   }
 })
 
+app.get('/files/download/:fileId/:filename', async (req, res) => {
+  try {
+    const fileId = Number(req.params['fileId'])
+    const buffer = await fileDatabase.getBytesById(fileId)
+
+    res.setHeader('Content-Type', `application/octet-stream"`)
+    res.send(buffer)
+  } catch (error) {
+    res.status(500).json({
+      error: [error.toString()],
+    })
+  }
+})
+
 app.delete('/folders/:folderId', async (req, res) => {
   try {
     const folderId = Number(req.params.folderId)

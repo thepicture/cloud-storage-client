@@ -101,17 +101,35 @@
         {{ new Date(item.createdAt).toLocaleString() }}
       </template>
       <template v-slot:item.totalSizeInBytes="{ item }">
-        {{ item.bytes.length | prettifyBytes }}
+        {{ item.totalSizeInBytes | prettifyBytes }}
       </template>
       <template v-slot:item.name="{ item }">
         {{ `${item.name}${item.extension ? '.' + item.extension : ''}` }}
       </template>
       <template v-slot:item.actions="{ item }">
-        <v-icon small class="mr-2" @click="editFile(item)"> mdi-pencil </v-icon>
-        <v-icon small class="mr-2" @click="deleteFile(item.id)">
+        <v-icon
+          aria-label="edit file"
+          small
+          class="mr-2"
+          @click="editFile(item)"
+        >
+          mdi-pencil
+        </v-icon>
+        <v-icon
+          aria-label="delete file"
+          small
+          class="mr-2"
+          @click="deleteFile(item.id)"
+        >
           mdi-delete
         </v-icon>
-        <v-icon @click="downloadFile(item)">mdi-download</v-icon>
+        <a
+          aria-label="download file"
+          :href="item.href"
+          class="text-decoration-none"
+        >
+          <v-icon>mdi-download</v-icon>
+        </a>
       </template>
     </v-data-table>
     <section class="section" v-else>
@@ -129,7 +147,7 @@
           {{ new Date(file.createdAt).toLocaleDateString() }}
         </v-card-subtitle>
         <v-card-text>
-          {{ file.bytes.length | prettifyBytes }}
+          {{ file.totalSizeInBytes | prettifyBytes }}
         </v-card-text>
         <v-card-actions>
           <v-spacer />
@@ -137,7 +155,9 @@
           <v-btn outlined color="red" @click="deleteFile(file.id)"
             >Delete</v-btn
           >
-          <v-btn color="primary" @click="downloadFile(file)">Download</v-btn>
+          <a :href="file.href" class="pl-2">
+            <v-btn color="primary" type="button">Download</v-btn>
+          </a>
         </v-card-actions>
       </v-card>
       <p v-if="filteredFiles.length === 0">Nothing to show here!</p>
@@ -163,15 +183,6 @@ import { Timestamp } from '@/utils/Timestamp'
 
 export default {
   name: 'FilesPage',
-  async asyncData(context) {
-    const response = await context.$axios.get(
-      `/files?folder_id=${context.route.params.id}`
-    )
-
-    return {
-      files: response.data.files,
-    }
-  },
   data: () => ({
     headers: [
       { text: 'File Name', value: 'name' },
@@ -195,6 +206,7 @@ export default {
       extension: '',
       createdAt: 0,
       deletedAt: Infinity,
+      totalSizeInBytes: 0,
       bytes: [],
     },
     editedFile: {
@@ -203,10 +215,12 @@ export default {
       extension: '',
       createdAt: 0,
       deletedAt: Infinity,
+      totalSizeInBytes: 0,
       bytes: [],
     },
     rawFile: null,
     newName: '',
+    files: [],
   }),
   filters: {
     prettifyBytes(value) {
@@ -224,6 +238,9 @@ export default {
         files = files.map((file) => ({
           ...file,
           fileName: `${file.name}${file.extension ? '.' + file.extension : ''}`,
+          href: `${this.$axios.defaults.baseURL}files/download/${
+            file.id
+          }/${encodeURIComponent(FilenameGetter.getFileName(file))}`,
         }))
       } else {
         files = this.files
@@ -232,6 +249,9 @@ export default {
             fileName: `${file.name}${
               file.extension ? '.' + file.extension : ''
             }`,
+            href: `${this.$axios.defaults.baseURL}files/download/${
+              file.id
+            }/${encodeURIComponent(FilenameGetter.getFileName(file))}`,
           }))
           .filter((file) =>
             JSON.stringify(file)
@@ -299,7 +319,7 @@ export default {
     totalSizeOfFiles() {
       return filesize(
         this.files
-          .map((file) => file.bytes.length)
+          .map((file) => file.totalSizeInBytes)
           .reduce((f1, f2) => f1 + f2, 0),
         {
           base: 2,
@@ -357,7 +377,7 @@ export default {
             deletedAt: null,
             owner: this.$store.state.user.email,
             folderId: this.editedFile.folderId,
-            bytes: this.editedFile.bytes,
+            totalSizeInBytes: this.editedFile.bytes.length,
           },
         ]
 
@@ -409,8 +429,6 @@ export default {
       let name
       let extension
 
-      const bytes = await this._getBytes(file)
-
       if (file.name.lastIndexOf('.') !== -1) {
         name = file.name.split('.').slice(0, -1).join('')
         extension = file.name.split('.').pop()
@@ -421,20 +439,9 @@ export default {
         extension,
         createdAt: +new Date(),
         deletedAt: Infinity,
-        bytes,
+        totalSizeInBytes: file.totalSizeInBytes,
+        bytes: await this._getBytes(file),
       }
-    },
-    downloadFile(file) {
-      const bytes = new Int8Array(file.bytes.length)
-      file.bytes.forEach((byte, index) => (bytes[index] = byte))
-
-      const blob = new Blob([bytes])
-
-      const anchor = document.createElement('a')
-      anchor.href = URL.createObjectURL(blob)
-      anchor.download = FilenameGetter.getFileName(file)
-
-      anchor.click()
     },
     /**
      * @param {File} file
@@ -448,6 +455,13 @@ export default {
   },
   created() {
     this.showAs = this.$cookies.get(CONSTANTS.FOLDERS_VIEW_TYPE) || 'table'
+  },
+  async mounted() {
+    const response = await this.$axios.get(
+      `/files?folder_id=${this.$route.params.id}`
+    )
+
+    this.files = response.data.files
   },
 }
 </script>

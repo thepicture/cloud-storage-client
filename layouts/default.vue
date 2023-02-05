@@ -58,6 +58,8 @@ import { mapActions } from 'vuex'
 
 import { CONSTANTS } from '@/config/index'
 
+import { auth } from '@/persistence/firebase'
+
 export default {
   name: 'DefaultLayout',
   data() {
@@ -105,7 +107,7 @@ export default {
     },
   },
   methods: {
-    ...mapActions(['logout']),
+    ...mapActions(['authenticate', 'logout', 'restoreUserSession']),
     changeTheme() {
       this.$vuetify.theme.dark = !this.$vuetify.theme.dark
 
@@ -123,22 +125,31 @@ export default {
     navigateTo(path) {
       this.$router.replace(path)
     },
+    _navigateDependingOnUserState() {
+      if (this.isAuthenticated) {
+        if (this.loggedOutPaths.includes(location.pathname)) {
+          this.navigateTo('/folders')
+        }
+      } else {
+        if (!this.loggedOutPaths.includes(location.pathname)) {
+          this.navigateTo('/auth')
+        }
+      }
+    },
   },
   created() {
     this.$vuetify.theme.dark = this.$cookies.get(CONSTANTS.IS_DARK_THEME)
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        this.restoreUserSession(user)
+        this._navigateDependingOnUserState()
+      }
+    })
   },
   mounted() {
     this.$root.notification = this.$refs.notification
 
-    if (this.isAuthenticated) {
-      if (this.loggedOutPaths.includes(location.pathname)) {
-        this.navigateTo('/folders')
-      }
-    } else {
-      if (!this.loggedOutPaths.includes(location.pathname)) {
-        this.navigateTo('/auth')
-      }
-    }
+    this._navigateDependingOnUserState()
   },
 }
 </script>

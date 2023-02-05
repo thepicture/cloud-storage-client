@@ -39,6 +39,12 @@ export const actions = {
       return false
     }
   },
+  restoreUserSession({ commit }, user) {
+    commit('setUser', {
+      accessToken: user.accessToken,
+      email: user.email,
+    })
+  },
   async register({ commit }, { email, password }) {
     try {
       const { user } = await createUserWithEmailAndPassword(
