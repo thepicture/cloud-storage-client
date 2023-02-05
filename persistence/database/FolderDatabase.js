@@ -13,21 +13,11 @@ class FolderDatabase {
           'name', title, 
           'createdAt', createdAt * 1000, 
           'owner', userEmail,
-          'files', (
-            SELECT json_group_array(
-                json_object(
-                  'id', file.id,
-                  'name', file.title,
-                  'extension', file.extension,
-                  'createdAt', file.createdAt,
-                  'deletedAt', file.deletedAt,
-                  'bytes', HEX(file.bytes))
-              )
-              FROM FILE AS file
-             WHERE folder.id = file.folderId)
-           ) AS record
-            FROM FOLDER AS folder
-           WHERE folder.userEmail = ?`,
+          'filesCount', (SELECT COUNT(id) FROM FILE WHERE folderId = folder.id),
+          'totalSizeInBytes', (SELECT SUM(LENGTH(bytes)) FROM FILE WHERE folderId = folder.id)
+         ) as record
+           FROM FOLDER AS folder
+          WHERE folder.userEmail = ?`,
         [userEmail],
         (err, results) => {
           if (err) {
@@ -35,14 +25,6 @@ class FolderDatabase {
           } else {
             const folders = results.map((entry) => JSON.parse(entry.record))
 
-            folders.forEach((folder) =>
-              folder.files.forEach(
-                (file) =>
-                  (file.bytes = file.bytes
-                    .match(/.{2}/g)
-                    .map((value) => parseInt(value, 16)))
-              )
-            )
             resolve(folders)
           }
         }

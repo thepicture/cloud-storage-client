@@ -9,23 +9,39 @@ class FileDatabase {
     return await new Promise((resolve, reject) => {
       this.db.all(
         `SELECT id, 
-                title      as 'name',
+                title         as 'name',
                 extension,
                 createdAt,
                 deletedAt,
-                HEX(bytes) as 'bytes', 
+                LENGTH(bytes) as 'totalSizeInBytes', 
                 folderId
            FROM FILE 
           WHERE folderId=?`,
         [folderId],
         (err, results) => {
           if (err) {
-            return reject(err)
+            reject(err)
           } else {
-            results.forEach((file) => {
-              file.bytes = [...Buffer.from(file.bytes, 'hex')]
-            })
             resolve(results)
+          }
+        }
+      )
+    })
+  }
+
+  async getBytesById(fileId) {
+    return await new Promise((resolve, reject) => {
+      this.db.all(
+        `SELECT HEX(bytes) as 'bytes'
+           FROM FILE 
+          WHERE id=?
+          LIMIT 1`,
+        [fileId],
+        (err, results) => {
+          if (err) {
+            reject(err)
+          } else {
+            resolve(Buffer.from(results[0].bytes, 'hex'))
           }
         }
       )
