@@ -173,6 +173,7 @@ import {
   EXTENSION_TYPE,
   FILE_TYPE,
   FILE_TYPE_MIMES,
+  TWENTY_MEGABYTES,
 } from '@/config/index'
 
 import { FilenameGetter } from '@/utils/FilenameGetter'
@@ -313,6 +314,10 @@ export default {
                 (file) => FilenameGetter.getFileName(file) !== this.rawFile.name
               )) ||
             'File with this name already exists',
+          () =>
+            (this.editedFile.bytes.length > 0 &&
+              this.editedFile.bytes.length < TWENTY_MEGABYTES) ||
+            'File Size should be less than 20mb',
         ]
       }
     },
