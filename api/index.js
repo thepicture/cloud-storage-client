@@ -9,6 +9,8 @@ const app = require('express')()
 const { FolderDatabase } = require(__dirname + '/../persistence')
 const { FileDatabase } = require(__dirname + '/../persistence')
 
+const { TWENTY_MEGABYTES } = require(__dirname + '/../config/index')
+
 const scriptPath = __dirname + '/../migrations/initialize.sql'
 const databasePath = __dirname + '/../databases/storage.db'
 
@@ -36,7 +38,7 @@ db.serialize(() => {
 const folderDatabase = new FolderDatabase(db)
 const fileDatabase = new FileDatabase(db)
 
-app.use(bodyParser.json({ limit: '256mb' }))
+app.use(bodyParser.json({ limit: '20mb' }))
 
 app.get('/folders/:userEmail', async (req, res) => {
   try {
@@ -208,6 +210,12 @@ app.post('/files', async (req, res) => {
     if (folderId <= 0) {
       res.status(422).json({
         error: ['folder should exist'],
+      })
+    }
+
+    if (bytes.length > TWENTY_MEGABYTES) {
+      res.status(422).json({
+        error: ['file size should be <= 20mb'],
       })
     }
 

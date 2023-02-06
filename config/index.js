@@ -474,3 +474,5 @@ export const FILE_TYPE_MIMES = {
   [FILE_TYPE.DOCUMENTS]: ['docx', 'doc', 'txt', 'pptx', 'ptx'],
   [FILE_TYPE.OTHER]: 'Other',
 }
+
+export const TWENTY_MEGABYTES = 20 * 1024 * 1024
