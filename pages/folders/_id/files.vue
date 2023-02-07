@@ -16,7 +16,7 @@
         class="mb-4"
       ></v-text-field>
     </v-card-title>
-    <v-dialog v-model="dialog" max-width="500px">
+    <v-dialog v-model="editDialog" max-width="500px">
       <template v-slot:activator="{ on, attrs }">
         <v-btn color="primary" dark class="mb-2 ml-4" v-bind="attrs" v-on="on">
           Upload File
@@ -67,6 +67,35 @@
         </v-form>
       </v-card>
     </v-dialog>
+
+    <v-dialog v-model="directLinkDialog" max-width="500px">
+      <v-card>
+        <v-card-title>
+          <span class="text-h5">File Share</span>
+        </v-card-title>
+        <v-container>
+          <v-row>
+            <v-col cols="12" sm="6" md="4">
+              <v-text-field
+                label="Direct Link"
+                v-model="directLink"
+                readonly
+              ></v-text-field>
+            </v-col>
+          </v-row>
+        </v-container>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn color="blue darken-1" text @click="copyDirectLinkToClipboard"
+            >Copy To Clipboard</v-btn
+          >
+          <v-btn color="blue darken-1" text @click="closeDirectLinkDialog"
+            >OK</v-btn
+          >
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
     <v-select
       :items="viewTypes"
       label="View Type"
@@ -107,29 +136,31 @@
         {{ `${item.name}${item.extension ? '.' + item.extension : ''}` }}
       </template>
       <template v-slot:item.actions="{ item }">
-        <v-icon
-          aria-label="edit file"
-          small
-          class="mr-2"
+        <TooltipButton
+          title="edit file"
+          icon="mdi-pencil"
           @click="editFile(item)"
-        >
-          mdi-pencil
-        </v-icon>
-        <v-icon
-          aria-label="delete file"
           small
-          class="mr-2"
+        />
+        <TooltipButton
+          title="delete file"
+          icon="mdi-delete"
           @click="deleteFile(item.id)"
-        >
-          mdi-delete
-        </v-icon>
-        <a
-          aria-label="download file"
+          small
+        />
+        <TooltipButton
+          title="Download"
+          icon="mdi-download"
+          tag="a"
           :href="item.href"
-          class="text-decoration-none"
-        >
-          <v-icon>mdi-download</v-icon>
-        </a>
+          small
+        />
+        <TooltipButton
+          title="get download link"
+          icon="mdi-share-variant"
+          @click="getDirectDownloadLink(item)"
+          small
+        />
       </template>
     </v-data-table>
     <section class="section" v-else>
@@ -145,6 +176,12 @@
         <v-card-subtitle>
           Created at
           {{ new Date(file.createdAt).toLocaleDateString() }}
+          <TooltipButton
+            title="get download link"
+            icon="mdi-share-variant"
+            @click="getDirectDownloadLink(file)"
+            small
+          />
         </v-card-subtitle>
         <v-card-text>
           {{ file.totalSizeInBytes | prettifyBytes }}
@@ -174,6 +211,7 @@ import {
   FILE_TYPE,
   FILE_TYPE_MIMES,
   TWENTY_MEGABYTES,
+  DIRECT_LINK_BASE_URL,
 } from '@/config/index'
 
 import { FilenameGetter } from '@/utils/FilenameGetter'
@@ -181,6 +219,7 @@ import { FilenameGetter } from '@/utils/FilenameGetter'
 import { FileURI } from '@/utils/FileURI'
 
 import { Timestamp } from '@/utils/Timestamp'
+import TooltipButton from '~/components/TooltipButton.vue'
 
 export default {
   name: 'FilesPage',
@@ -198,7 +237,8 @@ export default {
     fileTypes: Object.values(FILE_TYPE),
     fileType: FILE_TYPE.ALL,
     search: '',
-    dialog: false,
+    editDialog: false,
+    directLinkDialog: false,
     isEditMode: false,
     valid: false,
     defaultFile: {
@@ -222,6 +262,7 @@ export default {
     rawFile: null,
     newName: '',
     files: [],
+    directLink: '',
   }),
   filters: {
     prettifyBytes(value) {
@@ -234,7 +275,6 @@ export default {
   computed: {
     filteredFiles() {
       let files = this.files.slice()
-
       if (!this.search) {
         files = files.map((file) => ({
           ...file,
@@ -260,7 +300,6 @@ export default {
               .includes(this.search.toLowerCase())
           )
       }
-
       if (this.extensionType !== EXTENSION_TYPE.WITH_AND_WITHOUT_EXTENSIONS) {
         files = files.filter((file) =>
           this.extensionType === EXTENSION_TYPE.WITH_EXTENSION_ONLY
@@ -268,25 +307,20 @@ export default {
             : file.extension?.length === 0
         )
       }
-
       if (this.fileType !== FILE_TYPE.ALL) {
         files = files.filter((file) => {
           if (!file.extension) {
             return false
           }
-
           const extension = file.extension.toLowerCase()
-
           if (this.fileType === FILE_TYPE.OTHER) {
             return !Object.values(FILE_TYPE_MIMES)
               .reduce((acc, value) => [...acc, ...value])
               .includes(extension)
           }
-
           return FILE_TYPE_MIMES[this.fileType].includes(extension)
         })
       }
-
       return files
     },
     canSaveFile() {
@@ -315,8 +349,7 @@ export default {
               )) ||
             'File with this name already exists',
           () =>
-            (this.editedFile.bytes.length > 0 &&
-              this.editedFile.bytes.length < TWENTY_MEGABYTES) ||
+            this.editedFile.bytes.length < TWENTY_MEGABYTES ||
             'File Size should be less than 20mb',
         ]
       }
@@ -340,21 +373,17 @@ export default {
     async save() {
       if (this.isEditMode) {
         const [title, extension] = new FileURI(this.newName).getValues()
-
         await this.$axios.patch(`/files/${this.editedFile.id}`, {
           newTitle: title,
           newExtension: extension,
         })
-
         this.files = this.files.map((file) => {
           if (file.id === this.editedFile.id) {
             file.name = title
             file.extension = extension
           }
-
           return file
         })
-
         this.$root.notification.show({
           message: 'Rename successful!',
         })
@@ -363,7 +392,6 @@ export default {
           this.editedFile.name,
           this.editedFile.extension,
         ]
-
         const id = await this.$axios.post(`/files`, {
           title,
           extension,
@@ -371,7 +399,6 @@ export default {
           bytes: this.editedFile.bytes,
           folderId: Number(this.$route.params.id),
         })
-
         this.files = [
           ...this.files,
           {
@@ -385,39 +412,32 @@ export default {
             totalSizeInBytes: this.editedFile.bytes.length,
           },
         ]
-
         this.$root.notification.show({
           message: `File uploaded!`,
         })
       }
-
       this.close()
     },
     editFile(file) {
       this.rawFile = file
       this.editedFile = file
       this.newName = FilenameGetter.getFileName(file)
-
       this.isEditMode = true
-      this.dialog = true
+      this.editDialog = true
     },
     async deleteFile(fileId) {
       await this.$axios.delete(`/files/${fileId}`)
       this.files = this.files.filter((file) => file.id !== fileId)
-
       this.$root.notification.show({
         message: 'Deletion successful!',
       })
     },
     close() {
       this.editedFile = Object.assign({}, this.defaultFile)
-
       this.valid = false
       this.isEditMode = false
-      this.dialog = false
-
+      this.editDialog = false
       this.rawFile = null
-
       try {
         this.$refs.form.reset()
       } catch {}
@@ -430,15 +450,12 @@ export default {
       if (!file) {
         return
       }
-
       let name
       let extension
-
       if (file.name.lastIndexOf('.') !== -1) {
         name = file.name.split('.').slice(0, -1).join('')
         extension = file.name.split('.').pop()
       }
-
       this.editedFile = {
         name,
         extension,
@@ -448,13 +465,50 @@ export default {
         bytes: await this._getBytes(file),
       }
     },
+    async getDirectDownloadLink(file) {
+      this.$root.notification.show({
+        message: 'Please wait...',
+      })
+
+      const response = await this.$axios.post(
+        `/files/${file.id}/generate-direct-link`
+      )
+
+      const { data: hashLink } = response
+
+      const fileName = encodeURIComponent(FilenameGetter.getFileName(file))
+
+      const directLink = `${DIRECT_LINK_BASE_URL}/${hashLink}/${fileName}`
+
+      this.directLink = directLink
+
+      this.directLinkDialog = true
+    },
+    closeDirectLinkDialog() {
+      this.directLinkDialog = false
+      this.directLink = ''
+    },
+    copyDirectLinkToClipboard() {
+      try {
+        globalThis.navigator.clipboard.writeText(this.directLink)
+
+        this.$root.notification.show({
+          message: 'Link copied to Clipboard!',
+        })
+      } catch (error) {
+        console.error(`Link copy error: ${error}`)
+
+        this.$root.notification.show({
+          message: 'Cannot copy link to Clipboard',
+        })
+      }
+    },
     /**
      * @param {File} file
      */
     async _getBytes(file) {
       const buffer = await file.arrayBuffer()
       const array = new Int8Array(buffer)
-
       return [...array]
     },
   },
@@ -465,9 +519,9 @@ export default {
     const response = await this.$axios.get(
       `/files?folder_id=${this.$route.params.id}`
     )
-
     this.files = response.data.files
   },
+  components: { TooltipButton },
 }
 </script>
 

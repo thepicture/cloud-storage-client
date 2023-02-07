@@ -6,16 +6,23 @@ const bodyParser = require('body-parser')
 
 const app = require('express')()
 
-const { FolderDatabase } = require(__dirname + '/../persistence')
-const { FileDatabase } = require(__dirname + '/../persistence')
+const cors = require('cors')
+
+const { MigrationRunner } = require(__dirname + '/../utils/MigrationRunner')
+
+const { FolderDatabase } = require(__dirname +
+  '/../persistence/database/FolderDatabase')
+const { FileDatabase } = require(__dirname +
+  '/../persistence/database/FileDatabase')
 
 const { TWENTY_MEGABYTES } = require(__dirname + '/../config/index')
 
-const scriptPath = __dirname + '/../migrations/initialize.sql'
+const migrationsPath = __dirname + '/../migrations'
+
 const databasePath = __dirname + '/../databases/storage.db'
 
 let db = new sqlite3.Database(
-  databasePath,
+  ':memory:',
   sqlite3.OPEN_CREATE | sqlite3.OPEN_READWRITE,
   function (err) {
     if (err) {
@@ -30,15 +37,25 @@ db.serialize(() => {
     fs.unlinkSync(databasePath)
   }
 
-  const script = fs.readFileSync(scriptPath, 'utf-8')
-
-  db.exec(script)
+  const runner = new MigrationRunner(db)
+  runner.runFromFolder(migrationsPath)
 })
 
 const folderDatabase = new FolderDatabase(db)
 const fileDatabase = new FileDatabase(db)
 
-app.use(bodyParser.json({ limit: '20mb' }))
+app.use(
+  bodyParser.json({
+    limit: '20mb',
+  })
+)
+
+app.use(
+  cors({
+    origin: true,
+    credentials: true,
+  })
+)
 
 app.get('/folders/:userEmail', async (req, res) => {
   try {
@@ -52,12 +69,26 @@ app.get('/folders/:userEmail', async (req, res) => {
   }
 })
 
-app.get('/files', async (req, res) => {
+app.post('/files/:fileId/generate-direct-link', async (req, res) => {
   try {
-    const folderId = Number(req.query['folder_id'])
-    const files = await fileDatabase.getFilesFromFolder(folderId)
+    const fileId = Number(req.params['fileId'])
+    const directLink = await fileDatabase.getGeneratedDirectLink(fileId)
 
-    res.json({ files })
+    res.json(directLink)
+  } catch (error) {
+    res.status(500).json({
+      error: [error.toString()],
+    })
+  }
+})
+
+app.get('/files/:hashLink/:fileName', async (req, res) => {
+  try {
+    const { hashLink } = req.params
+    const buffer = await fileDatabase.getFileByHashLink(hashLink)
+
+    res.setHeader('Content-Type', `application/octet-stream"`)
+    res.send(buffer)
   } catch (error) {
     res.status(500).json({
       error: [error.toString()],
@@ -72,6 +103,19 @@ app.get('/files/download/:fileId/:filename', async (req, res) => {
 
     res.setHeader('Content-Type', `application/octet-stream"`)
     res.send(buffer)
+  } catch (error) {
+    res.status(500).json({
+      error: [error.toString()],
+    })
+  }
+})
+
+app.get('/files', async (req, res) => {
+  try {
+    const folderId = Number(req.query['folder_id'])
+    const files = await fileDatabase.getFilesFromFolder(folderId)
+
+    res.json({ files })
   } catch (error) {
     res.status(500).json({
       error: [error.toString()],
@@ -235,4 +279,8 @@ app.post('/files', async (req, res) => {
   }
 })
 
-module.exports = app
+const PORT = process.env.PORT || 8080
+
+app.listen(PORT, () => {
+  console.log(`Server is listening on port ${PORT}...`)
+})
