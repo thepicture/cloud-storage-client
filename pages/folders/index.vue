@@ -84,10 +84,18 @@
         {{ item.totalSizeInBytes | prettifyBytes }}
       </template>
       <template v-slot:item.actions="{ item }">
-        <v-icon small class="mr-2" @click.stop="editFolder(item)">
-          mdi-pencil
-        </v-icon>
-        <v-icon small @click.stop="deleteFolder(item.id)"> mdi-delete </v-icon>
+        <TooltipButton
+          title="edit folder name"
+          icon="mdi-pencil"
+          @click="editFolder(item)"
+          small
+        />
+        <TooltipButton
+          title="delete folder"
+          icon="mdi-delete"
+          @click="deleteFolder(item.id)"
+          small
+        />
       </template>
     </v-data-table>
     <section class="section" v-else>
@@ -132,6 +140,7 @@ import { filesize } from 'filesize'
 
 import { CONSTANTS } from '@/config/index'
 import { Timestamp } from '~/utils/Timestamp'
+import TooltipButton from '~/components/TooltipButton.vue'
 
 export default {
   name: 'FoldersPage',
@@ -180,7 +189,6 @@ export default {
       if (!this.search) {
         return this.folders
       }
-
       return this.folders.filter((folder) =>
         JSON.stringify(folder).toLowerCase().includes(this.search.toLowerCase())
       )
@@ -212,15 +220,12 @@ export default {
         await this.$axios.patch(`/folders/${this.editedFolder.id}`, {
           newTitle: this.editedFolder.name,
         })
-
         this.folders = this.folders.map((folder) => {
           if (folder.id === this.editedFolder.id) {
             folder.name = this.editedFolder.name
           }
-
           return folder
         })
-
         this.$root.notification.show({
           message: 'Rename successful!',
         })
@@ -229,7 +234,6 @@ export default {
           title: this.editedFolder.name,
           userEmail: this.$store.state.user.email,
         })
-
         this.folders = [
           ...this.folders,
           {
@@ -241,31 +245,26 @@ export default {
             totalSizeInBytes: 0,
           },
         ]
-
         this.$root.notification.show({
           message: `Folder ${this.editedFolder.name} created!`,
         })
       }
-
       this.close()
     },
     editFolder(folder) {
       this.editedFolder = Object.assign({}, folder)
-
       this.isEditMode = true
       this.dialog = true
     },
     async deleteFolder(folderId) {
       await this.$axios.delete(`/folders/${folderId}`)
       this.folders = this.folders.filter((folder) => folder.id !== folderId)
-
       this.$root.notification.show({
         message: 'Deletion successful!',
       })
     },
     close() {
       this.editedFolder = Object.assign({}, this.defaultFolder)
-
       this.isEditMode = false
       this.dialog = false
     },
@@ -278,17 +277,15 @@ export default {
   },
   async mounted() {
     const user = this.$store.state.user
-
     if (!user) {
       return { folders: [] }
     }
-
     const response = await this.$axios.get(
       `/folders/${encodeURIComponent(user.email)}`
     )
-
     this.folders = response.data.folders
   },
+  components: { TooltipButton },
 }
 </script>
 

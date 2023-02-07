@@ -28,14 +28,11 @@
     </v-navigation-drawer>
     <v-app-bar :clipped-left="clipped" fixed app>
       <v-app-bar-nav-icon @click.stop="drawer = !drawer" />
-      <v-tooltip bottom>
-        <template v-slot:activator="{ on, attrs }">
-          <v-btn icon @click="changeTheme">
-            <v-icon v-on="on" v-bind="attrs">mdi-weather-sunny</v-icon>
-          </v-btn>
-        </template>
-        <span>Toggle Theme</span>
-      </v-tooltip>
+      <TooltipButton
+        title="toggle theme"
+        icon="mdi-weather-sunny"
+        @click="changeTheme"
+      />
       <v-toolbar-title>{{ title }}</v-toolbar-title>
       <v-spacer />
       <v-btn color="primary" @click="handleLogOut" v-if="isAuthenticated"
@@ -59,6 +56,8 @@ import { mapActions } from 'vuex'
 import { CONSTANTS } from '@/config/index'
 
 import { auth } from '@/persistence/firebase'
+
+import TooltipButton from '~/components/TooltipButton.vue'
 
 export default {
   name: 'DefaultLayout',
@@ -110,16 +109,13 @@ export default {
     ...mapActions(['authenticate', 'logout', 'restoreUserSession']),
     changeTheme() {
       this.$vuetify.theme.dark = !this.$vuetify.theme.dark
-
       this.$cookies.set(CONSTANTS.IS_DARK_THEME, this.$vuetify.theme.dark)
     },
     handleLogOut() {
       this.logout()
-
       this.$root.notification.show({
         message: 'Log out successful!',
       })
-
       this.navigateTo('/auth')
     },
     navigateTo(path) {
@@ -148,8 +144,8 @@ export default {
   },
   mounted() {
     this.$root.notification = this.$refs.notification
-
     this._navigateDependingOnUserState()
   },
+  components: { TooltipButton },
 }
 </script>
