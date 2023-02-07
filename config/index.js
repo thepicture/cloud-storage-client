@@ -476,3 +476,5 @@ export const FILE_TYPE_MIMES = {
 }
 
 export const TWENTY_MEGABYTES = 20 * 1024 * 1024
+
+export const DIRECT_LINK_BASE_URL = `https://cloud-storage-server.thepicture.repl.co/files`
