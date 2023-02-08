@@ -1,5 +1,5 @@
 <template>
-  <v-card class="pl-4 pr-4">
+  <v-card class="pl-4 pr-4 pb-4">
     <v-card-title>
       Folders
       <v-card-subtitle>{{ totalSizeOfFolders }} Total</v-card-subtitle>

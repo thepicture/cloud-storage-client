@@ -90,7 +90,7 @@ app.get('/files/:hashLink/:fileName', async (req, res) => {
     res.setHeader('Content-Type', `application/octet-stream"`)
     res.send(buffer)
   } catch (error) {
-    res.status(500).json({
+    res.status(404).json({
       error: [error.toString()],
     })
   }
@@ -269,6 +269,7 @@ app.post('/files', async (req, res) => {
       deletedAt,
       bytes,
       folderId,
+      deletedAt,
     })
 
     res.status(201).json(id)
