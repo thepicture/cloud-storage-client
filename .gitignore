@@ -91,3 +91,6 @@ sw.*
 
 # Databases
 databases/*
+
+# Repo-specific git
+gitoid.sh
