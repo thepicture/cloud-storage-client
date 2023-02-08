@@ -26,6 +26,26 @@
           @change="handleFileChange"
           v-else
         ></v-file-input>
+        <v-checkbox
+          v-model="temporary"
+          class="ml-5"
+          :label="`Temporary`"
+        ></v-checkbox>
+        <section class="ml-5">
+          <v-datetime-picker
+            label="Deleted At"
+            :date-picker-props="dateProps"
+            v-model="datetime"
+            v-if="temporary"
+          >
+            <template slot="dateIcon">
+              <v-icon>mdi-calendar</v-icon>
+            </template>
+            <template slot="timeIcon">
+              <v-icon>mdi-clock</v-icon>
+            </template></v-datetime-picker
+          >
+        </section>
 
         <v-card-actions>
           <v-spacer></v-spacer>
@@ -52,6 +72,12 @@ export default {
     return {
       valid: false,
       name: this.newName,
+      deletedAt: Infinity,
+      temporary: false,
+      dateProps: {
+        min: new Date().toISOString().substring(0, 10),
+      },
+      datetime: new Date(),
     }
   },
   props: {
@@ -75,7 +101,7 @@ export default {
       this.$emit('close')
     },
     handleSave() {
-      this.$emit('save', this.name)
+      this.$emit('save', { name: this.name, deletedAt: this.deletedAt })
     },
   },
 }

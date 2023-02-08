@@ -114,7 +114,7 @@
         </v-card-title>
         <v-card-subtitle>
           Created at
-          {{ new Date(file.createdAt).toLocaleDateString() }}
+          {{ new Date(file.createdAt * 1000).toLocaleDateString() }}
           <TooltipButton
             title="get download link"
             icon="mdi-share-variant"
@@ -261,7 +261,10 @@ export default {
           return FILE_TYPE_MIMES[this.fileType].includes(extension)
         })
       }
-      return files
+      return files.map((file) => ({
+        ...file,
+        createdAt: file.createdAt * 1000,
+      }))
     },
 
     fileRules() {
@@ -296,7 +299,7 @@ export default {
     handleViewTypeSelect() {
       this.$cookies.set(CONSTANTS.FOLDERS_VIEW_TYPE, this.showAs)
     },
-    async saveFile(name) {
+    async saveFile({ name, deletedAt }) {
       if (this.isEditMode) {
         const [title, extension] = new FileURI(name).getValues()
         await this.$axios.patch(`/files/${this.editedFile.id}`, {
@@ -324,6 +327,7 @@ export default {
           deletedAt: null,
           bytes: this.editedFile.bytes,
           folderId: Number(this.$route.params.id),
+          deletedAt: Number.isFinite(deletedAt) ? deletedAt : 0,
         })
         this.files = [
           ...this.files,

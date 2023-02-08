@@ -18,7 +18,8 @@ class FileDatabase {
                 LENGTH(bytes) as 'totalSizeInBytes', 
                 folderId
            FROM FILE 
-          WHERE folderId=?`,
+          WHERE folderId=?
+            AND deletedAt IS NULL OR deletedAt > STRFTIME('%s', 'now')`,
         [folderId],
         (err, results) => {
           if (err) {
@@ -127,7 +128,7 @@ class FileDatabase {
           title,
           extension,
           Timestamp.nowAsSeconds(),
-          deletedAt,
+          deletedAt === 0 ? null : deletedAt,
           Buffer.from(bytes),
           folderId,
         ],

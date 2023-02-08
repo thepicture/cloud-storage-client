@@ -20,7 +20,12 @@ export default {
 
   css: [],
 
-  plugins: [],
+  plugins: [
+    {
+      src: '~/plugins/date-time-picker.js',
+      mode: 'client',
+    },
+  ],
 
   components: true,
 
